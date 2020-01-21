@@ -1,0 +1,47 @@
+{
+	"name": "glslm",
+	"version": "0.0.0",
+	"description": "Parse GLSL strings to ES module likely glslify",
+	"homepage": "https://github.com/billowz/glslm#readme",
+	"keywords": [
+		"glsl",
+		"glslify",
+		"glslm",
+		"shaders",
+		"module"
+	],
+	"author": "Billow Z <billowz@hotmail.com>",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/billowz/glslm"
+	},
+	"bugs": {
+		"url": "https://github.com/billowz/glslm/issues"
+	},
+	"license": "MIT",
+	"main": "index.js",
+	"scripts": {
+		"lint": "eslint .",
+		"test": "node ./test/index.js",
+		"build": "npm run lint",
+		"snapshot": "cross-env SNAPSHOT=true npm run test"
+	},
+	"dependencies": {
+		"@choojs/findup": "^0.2.1",
+		"glsl-resolve": "0.0.1",
+		"log4js": "^6.1.0",
+		"resolve": "^1.14.2"
+	},
+	"devDependencies": {
+		"cross-env": "^6.0.3",
+		"eslint": "^6.8.0",
+		"eslint-config-prettier": "^6.9.0",
+		"eslint-plugin-prettier": "^3.1.2",
+		"general-release": "0.0.17",
+		"glsl-noise": "0.0.0",
+		"prettier": "^1.19.1",
+		"rimraf": "^3.0.0",
+		"tape": "^4.13.0",
+		"glslm": "./"
+	}
+}
