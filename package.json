@@ -1,6 +1,6 @@
 {
 	"name": "glslm",
-	"version": "0.0.0",
+	"version": "0.0.1",
 	"description": "Parse GLSL strings to ES module likely glslify",
 	"homepage": "https://github.com/billowz/glslm#readme",
 	"keywords": [
