@@ -63,22 +63,22 @@ if (process.env.SNAPSHOT) {
 	Object.entries(shaders).forEach(([file, desc]) => {
 		if (!desc.err) {
 			g.load(getFixtureFile(file))
-				.then(m => {
+				.then((m) => {
 					writeSnapshotFile(m.file, null, m.toString())
 					writeSnapshotFile(m.file, CJSExt, m.toCJS())
 					writeSnapshotFile(m.file, ESMExt, m.toESM())
 					writeSnapshotFile(m.file, TSMExt, m.toTSM())
 				})
-				.catch(err => {
+				.catch((err) => {
 					console.error(err)
 				})
 		}
 	})
 } else {
 	Object.entries(shaders).forEach(([file, desc]) => {
-		test(desc.name, { skip: !testReg.test(file) }, assert => {
+		test(desc.name, { skip: !testReg.test(file) }, (assert) => {
 			g.load(getFixtureFile(file))
-				.then(m => {
+				.then((m) => {
 					assert.ok(!desc.err)
 
 					/*
@@ -100,7 +100,7 @@ if (process.env.SNAPSHOT) {
 
 					assert.end()
 				})
-				.catch(err => {
+				.catch((err) => {
 					if (typeof desc.err === 'function') {
 						desc.err(assert)
 					} else if (typeof desc.err === 'string') {

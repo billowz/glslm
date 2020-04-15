@@ -5,7 +5,7 @@ const commaSplitReg = /\s*,\s*/g
 
 function walkGlslNode(node, start, end) {
 	const parseChild = start(node)
-	parseChild !== false && node.children && node.children.forEach(node => walkGlslNode(node, start, end))
+	parseChild !== false && node.children && node.children.forEach((node) => walkGlslNode(node, start, end))
 	end && end(node)
 }
 
@@ -35,7 +35,7 @@ function compactTokens(tokens, comment) {
 		excludeTypes['block-comment'] = true
 	}
 	let prevWS = -1
-	tokens = tokens.filter(token => {
+	tokens = tokens.filter((token) => {
 		if (excludeTypes[token.type] || token.export || !token.data) return false
 		if (token.type === 'whitespace') {
 			if (prevWS) return false
@@ -64,13 +64,13 @@ module.exports = class GLSLModule {
 			.replace(/.*[\/\\]/g, '')
 			.replace(/[^\w$]/g, '_')
 			.replace(/^(\d)/, '$$$1')
-		this.tokens = tokenize(source).map(token => ((token.file = file), token))
+		this.tokens = tokenize(source).map((token) => ((token.file = file), token))
 		this.preprocessor()
 	}
 
 	toCJS(comment) {
 		const imports = this.depModules
-			.map(m => `\nconst ${m.id} = require('${this.transformDepentPath(m.path, 'cjs')}')`)
+			.map((m) => `\nconst ${m.id} = require('${this.transformDepentPath(m.path, 'cjs')}')`)
 			.join('')
 
 		return `/* glslm */
@@ -84,7 +84,7 @@ module.exports = ${this.toBuilderString(false, comment)}
 
 	toESM(comment) {
 		const imports = this.depModules
-			.map(m => `\nimport ${m.id} from '${this.transformDepentPath(m.path, 'esm')}'`)
+			.map((m) => `\nimport ${m.id} from '${this.transformDepentPath(m.path, 'esm')}'`)
 			.join('')
 
 		return `/* glslm */
@@ -98,7 +98,7 @@ export default ${this.toBuilderString(false, comment)}
 
 	toTSM(comment) {
 		const imports = this.depModules
-			.map(m => `\nimport ${m.id} from '${this.transformDepentPath(m.path, 'tsm')}'`)
+			.map((m) => `\nimport ${m.id} from '${this.transformDepentPath(m.path, 'tsm')}'`)
 			.join('')
 
 		return `/* glslm */
@@ -115,26 +115,26 @@ export default ${this.toBuilderString(true, comment)}
 			content = `\`${this.toStr({
 				comment,
 				renames: {},
-				include: imp => {
+				include: (imp) => {
 					return `\${${imp.m.id}(${
 						imp.renameArray.length
 							? `glslDepNames(__renames__, { ${imp.renameArray
-									.map(r => `${r[0]}: '${r[1]}'`)
+									.map((r) => `${r[0]}: '${r[1]}'`)
 									.join(', ')} })`
 							: `__renames__`
 					})}`
 				},
-				rename: name => {
+				rename: (name) => {
 					refs[name] = true
 					return `\${${name}}`
 				}
 			})}\n\``,
 			declares = Object.keys(refs)
 				.sort()
-				.map(name => `${name} = glslName(__renames__, '${name}')`),
+				.map((name) => `${name} = glslName(__renames__, '${name}')`),
 			renameTypes = ts
 				? `?: {${Object.keys(this.globals)
-						.map(name => `${name}?: string`)
+						.map((name) => `${name}?: string`)
 						.join(', ')}}`
 				: ''
 
@@ -152,7 +152,7 @@ export default ${this.toBuilderString(true, comment)}
 			if (splitComment === false) return content + '\n'
 
 			var repStr = Object.entries(renames)
-				.map(r => `${r[0]}:${r[1]}`)
+				.map((r) => `${r[0]}:${r[1]}`)
 				.join(',')
 			return `// include(${imp.path}, {${repStr}}) begin
 ${content}
@@ -165,7 +165,7 @@ ${content}
 	toStr({ renames, include, rename, data, comment }) {
 		renames = renames || {}
 		return compactTokens(this.tokens, comment)
-			.map(token => {
+			.map((token) => {
 				const { import: imp, global } = token
 				if (imp) {
 					const globals = imp.globals,
@@ -190,7 +190,7 @@ ${content}
 					if (global.type === 'marco' && global.decl === token) {
 						return `#define ${name}${global.args ? `(${global.args.join(', ')})` : ''}${
 							global.body
-								? ` ${global.body.map(tk => (tk.global ? globalStr(tk) : tk.data)).join('')}`
+								? ` ${global.body.map((tk) => (tk.global ? globalStr(tk) : tk.data)).join('')}`
 								: ''
 						}`
 					}
@@ -208,8 +208,8 @@ ${content}
 	parse() {
 		const depGlobals = {}
 		return Promise.all(
-			this.imports.map(imp => {
-				return this.resolveDepend(this.file, imp).then(dep => {
+			this.imports.map((imp) => {
+				return this.resolveDepend(this.file, imp).then((dep) => {
 					imp.module = dep
 					const { singleExport, globals } = dep
 					const { token, path, names, renames } = imp
@@ -258,7 +258,7 @@ ${content}
 			let depIdGen = {},
 				deps = {}
 			this.depModules = this.imports
-				.map(imp => {
+				.map((imp) => {
 					if (deps[imp.path]) {
 						imp.m = deps[imp.path]
 						return
@@ -293,7 +293,7 @@ ${content}
 			token,
 			`${global.name} have defined${glslGlobalSourcePath(global)
 				.map(
-					g =>
+					(g) =>
 						`[${g.type} ${g.name}${
 							g.source && g.source.name !== g.name ? ` <- ${g.source.name}` : ''
 						}] at ${g.decl.file}:${g.decl.line}`
@@ -312,7 +312,7 @@ ${content}
 
 	parseGLSL() {
 		const parser = glslParser()
-		this.tokens.forEach(token => {
+		this.tokens.forEach((token) => {
 			try {
 				parser(token)
 			} catch (e) {
@@ -338,7 +338,7 @@ ${content}
 		}
 		walkGlslNode(
 			ast,
-			node => {
+			(node) => {
 				const token = node.token
 
 				var imp, name, m
@@ -349,7 +349,7 @@ ${content}
 						name,
 						type: 'function',
 						decl: token,
-						key: argsNode.children.map(arg => arg.children[arg.children.length - 2].token.data).join(','),
+						key: argsNode.children.map((arg) => arg.children[arg.children.length - 2].token.data).join(','),
 						refs: []
 					})
 					l !== level && addDecl(name, token)
@@ -390,7 +390,7 @@ ${content}
 					}
 				} else if (token.export) {
 					this.errorOn(level > 0, token, `export expression should be using in global area`)
-					token.export.forEach(exp => {
+					token.export.forEach((exp) => {
 						this.errorOn(!globals[exp], token, `${exp} is not define`)
 					})
 				} else if (
@@ -403,7 +403,7 @@ ${content}
 						body =
 							m[3] &&
 							tokenize(m[3])
-								.map(tk => {
+								.map((tk) => {
 									if (tk.type === 'ident' && (!args || !args.includes(tk.data))) {
 										const name = tk.data,
 											global = globals[name]
@@ -415,7 +415,7 @@ ${content}
 									}
 									return tk
 								})
-								.filter(tk => tk.type !== 'eof')
+								.filter((tk) => tk.type !== 'eof')
 					token.global = this.mergeGlobal(globals, {
 						name,
 						type: 'marco',
@@ -433,7 +433,7 @@ ${content}
 					stack[level] = scope
 				}
 			},
-			node => {
+			(node) => {
 				if (isScopeNode(node)) {
 					stack.pop()
 					scope = stack[--level]
@@ -480,7 +480,7 @@ ${content}
 	}
 
 	preprocessor() {
-		this.tokens.forEach(token => {
+		this.tokens.forEach((token) => {
 			let m
 			if (token.type !== 'preprocessor') {
 				return
@@ -515,13 +515,13 @@ ${content}
 			}
 
 		m[3] &&
-			m[3].split(commaSplitReg).forEach(v => {
+			m[3].split(commaSplitReg).forEach((v) => {
 				const [name, alias] = v.split(renamesplitReg)
 				addRename(name, alias.replace(quotesReg, ''))
 			})
 
 		m[1] &&
-			m[1].split(commaSplitReg).forEach(v => {
+			m[1].split(commaSplitReg).forEach((v) => {
 				let [name, alias] = v.split(nameSplitReg)
 				if (alias) {
 					alias = alias.replace(quotesReg, '')
@@ -543,7 +543,7 @@ ${content}
 	parseExport(token, expr) {
 		const m = /^export\(\s*(\w+(?:\s*,\s*\w+)*)\s*\)\s*$/.exec(expr)
 		if (!m) return false
-		token.export = m[1].split(commaSplitReg).map(name => this.addExport(name, token))
+		token.export = m[1].split(commaSplitReg).map((name) => this.addExport(name, token))
 	}
 
 	addExport(name, token) {

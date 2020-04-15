@@ -43,16 +43,16 @@ module.exports = class GLSLLoader extends Emitter {
 		this.logger.debug(`loading ${file}`)
 
 		return this.getTransforms(file)
-			.then(transforms => {
-				return this.readFile(file).then(src => {
-					this.logger.debug(`transforming ${file} by [${transforms.map(t => t.name).join(', ')}]`)
+			.then((transforms) => {
+				return this.readFile(file).then((src) => {
+					this.logger.debug(`transforming ${file} by [${transforms.map((t) => t.name).join(', ')}]`)
 
 					this.emit('file', file, src, transforms)
 
 					return this.applyTransforms(file, src, transforms)
 				})
 			})
-			.then(source => {
+			.then((source) => {
 				this.emit('transformed', file, source)
 
 				const m = new GLSLModule({
@@ -66,7 +66,7 @@ module.exports = class GLSLLoader extends Emitter {
 									return reject(
 										`${imp.token.file}:${imp.token.line} can not resolve glsl module: ${imp.path}`
 									)
-								this.load(resolved).then(m => {
+								this.load(resolved).then((m) => {
 									resolve(m)
 								})
 							})
@@ -76,8 +76,8 @@ module.exports = class GLSLLoader extends Emitter {
 				this.logger.debug(`parsing ${file}`)
 				return m.parse()
 			})
-			.then(mod => {
-				modules[file].forEach(cb => cb(null, mod))
+			.then((mod) => {
+				modules[file].forEach((cb) => cb(null, mod))
 				modules[file] = mod
 				this.logger.info(
 					`loaded ${file}. exports: ${Object.keys(mod.exports).join('|')}, globals: ${Object.keys(
@@ -86,8 +86,8 @@ module.exports = class GLSLLoader extends Emitter {
 				)
 				return Promise.resolve(mod)
 			})
-			.catch(err => {
-				modules[file].forEach(cb => cb(err))
+			.catch((err) => {
+				modules[file].forEach((cb) => cb(err))
 				throw err
 			})
 	}
@@ -124,16 +124,16 @@ module.exports = class GLSLLoader extends Emitter {
 					resolve(path.join(found, 'package.json'))
 				}
 			})
-		}).then(pkgFile => {
+		}).then((pkgFile) => {
 			if (transformCache[pkgFile]) {
 				return Promise.resolve(transformCache[pkgFile])
 			}
 			return pkgFile
-				? this.readFile(pkgFile).then(data => {
+				? this.readFile(pkgFile).then((data) => {
 						var pkg = JSON.parse(data),
 							transforms = (pkg['glslify'] && pkg['glslify']['transform']) || []
 						return Promise.resolve(
-							transforms.map(tr => {
+							transforms.map((tr) => {
 								var transform = Array.isArray(tr) ? tr : [tr],
 									opts = transform[1] || {}
 								return this.resolveTransform(transform[0], opts)

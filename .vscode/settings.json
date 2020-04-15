@@ -1,0 +1,28 @@
+{
+	// editor
+	"files.eol": "\n",
+	"editor.tabSize": 4,
+	"editor.insertSpaces": false,
+
+	"javascript.updateImportsOnFileMove.enabled": "always",
+	"typescript.updateImportsOnFileMove.enabled": "always",
+
+	// prettier
+	"editor.formatOnSave": false,
+	"javascript.format.enable": false,
+	"typescript.format.enable": false,
+	"html.format.enable": false,
+	"json.format.enable": false,
+	"prettier.eslintIntegration": true,
+
+	// todo tree
+	"todo-tree.tree.autoRefresh": false,
+	"todo-tree.highlights.customHighlight": {
+		"TODO": {},
+		"FIXME": {}
+	},
+	"todo-tree.highlights.defaultHighlight": {
+		"foreground": "green",
+		"type": "none"
+	}
+}

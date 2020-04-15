@@ -1,15 +1,7 @@
 {
-	"root": true,
-	"env": {
-		"browser": true,
-		"node": true
-	},
-	"extends": ["plugin:prettier/recommended"],
-	"rules": {},
-	"settings": {
-		"flowtype": {
-			"onlyFilesWithFlowAnnotation": true
-		}
+	"plugins": ["prettier"],
+	"rules": {
+		"prettier/prettier": "error"
 	},
 	"parserOptions": {
 		"ecmaVersion": 6,
