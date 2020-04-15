@@ -28,32 +28,36 @@ function glslGlobalSourcePath(global) {
 	return path
 }
 
-function isEmptyToken(token) {
-	const type = token.type
-	return type === 'whitespace' || type === 'eof'
+function compactTokens(tokens, comment) {
+	const excludeTypes = { eof: true }
+	if (comment === false) {
+		excludeTypes['line-comment'] = true
+		excludeTypes['block-comment'] = true
+	}
+	let prevWS = -1
+	tokens = tokens.filter(token => {
+		if (excludeTypes[token.type] || token.export || !token.data) return false
+		if (token.type === 'whitespace') {
+			if (prevWS) return false
+			prevWS = token
+		} else {
+			prevWS = null
+		}
+		return true
+	})
+	if (prevWS) tokens.pop()
+	return tokens
 }
 
-function trimTokens(tokens) {
-	const l = tokens.length
-	let start = 0,
-		end = l - 1
-	for (; start < end; start++) {
-		if (!isEmptyToken(tokens[start])) {
-			break
-		}
-	}
-	for (; end > start; end--) {
-		if (!isEmptyToken(tokens[start])) {
-			break
-		}
-	}
-	return tokens.slice(start, end)
+function defaultTransformDepentPath(path) {
+	return path
 }
 
 module.exports = class GLSLModule {
-	constructor(file, source, resolveDepend) {
+	constructor({ file, source, resolve, transformDepentPath }) {
 		this.file = file
-		this.resolveDepend = resolveDepend
+		this.resolveDepend = resolve
+		this.transformDepentPath = transformDepentPath || defaultTransformDepentPath
 		this.imports = []
 		this.exports = {}
 		this.id = file
@@ -64,60 +68,67 @@ module.exports = class GLSLModule {
 		this.preprocessor()
 	}
 
-	toCJS() {
-		const imports = this.depModules.map(m => `\nconst ${m.id} = require('${m.path}')`).join('')
+	toCJS(comment) {
+		const imports = this.depModules
+			.map(m => `\nconst ${m.id} = require('${this.transformDepentPath(m.path, 'cjs')}')`)
+			.join('')
 
 		return `/* glslm */
 /* eslint-disable */
 ${imports}
-const {glslName, glslDepNames} = require('glslm/helper/cjs')
+const { glslName, glslDepNames } = require('glslm/helper/cjs')
 
-module.exports = ${this.toBuilderString()}
+module.exports = ${this.toBuilderString(false, comment)}
 `
 	}
 
-	toESM() {
-		const imports = this.depModules.map(m => `\nimport ${m.id} from '${m.path}'`).join('')
+	toESM(comment) {
+		const imports = this.depModules
+			.map(m => `\nimport ${m.id} from '${this.transformDepentPath(m.path, 'esm')}'`)
+			.join('')
 
 		return `/* glslm */
 /* eslint-disable */
 ${imports}
-import {glslName, glslDepNames} from 'glslm/helper/esm'
+import { glslName, glslDepNames } from 'glslm/helper/esm'
 
-export default ${this.toBuilderString()}
+export default ${this.toBuilderString(false, comment)}
 `
 	}
 
-	toTSM() {
-		const imports = this.depModules.map(m => `\nimport ${m.id} from '${m.path}'`).join('')
+	toTSM(comment) {
+		const imports = this.depModules
+			.map(m => `\nimport ${m.id} from '${this.transformDepentPath(m.path, 'tsm')}'`)
+			.join('')
 
 		return `/* glslm */
 /* tslint-disable */
 ${imports}
-import {glslName, glslDepNames} from 'glslm/helper/tsm'
+import { glslName, glslDepNames } from 'glslm/helper/tsm'
 
-export default ${this.toBuilderString(true)}
+export default ${this.toBuilderString(true, comment)}
 `
 	}
 
-	toBuilderString(ts) {
+	toBuilderString(ts, comment) {
 		const refs = {},
-			content = `\`${this.toStr(
-				{},
-				imp => {
+			content = `\`${this.toStr({
+				comment,
+				renames: {},
+				include: imp => {
 					return `\${${imp.m.id}(${
 						imp.renameArray.length
-							? `glslDepNames(__renames__, {${imp.renameArray
+							? `glslDepNames(__renames__, { ${imp.renameArray
 									.map(r => `${r[0]}: '${r[1]}'`)
-									.join(', ')}})`
+									.join(', ')} })`
 							: `__renames__`
 					})}`
 				},
-				name => {
+				rename: name => {
 					refs[name] = true
 					return `\${${name}}`
 				}
-			)}\n\``,
+			})}\n\``,
 			declares = Object.keys(refs)
 				.sort()
 				.map(name => `${name} = glslName(__renames__, '${name}')`),
@@ -128,16 +139,17 @@ export default ${this.toBuilderString(true)}
 				: ''
 
 		return `function(__renames__${renameTypes})${ts ? ': string' : ''} {${
-			declares.length ? `\n    const ${declares.join(',\n          ')}\n` : ''
+			declares.length ? `\n\tconst ${declares.join(',\n\t\t')}\n` : ''
 		}
-    return ${content}
+	return ${content}
 }`
 	}
 
-	toString(renames, comment) {
+	toString(renames, comment, splitComment) {
+		if (splitComment == null) splitComment = comment
 		function include(imp, renames) {
-			const content = imp.module.toStr(renames, include)
-			if (comment === false) return content
+			const content = imp.module.toStr({ renames, include, comment })
+			if (splitComment === false) return content + '\n'
 
 			var repStr = Object.entries(renames)
 				.map(r => `${r[0]}:${r[1]}`)
@@ -147,12 +159,12 @@ ${content}
 // include(${imp.path}, {${repStr}}) end
 `
 		}
-		return this.toStr(renames, include) + '\n'
+		return this.toStr({ renames, include, comment }) + '\n'
 	}
 
-	toStr(renames, include, rename, data) {
+	toStr({ renames, include, rename, data, comment }) {
 		renames = renames || {}
-		return this.tokens
+		return compactTokens(this.tokens, comment)
 			.map(token => {
 				const { import: imp, global } = token
 				if (imp) {
@@ -177,7 +189,9 @@ ${content}
 					const name = globalStr(token)
 					if (global.type === 'marco' && global.decl === token) {
 						return `#define ${name}${global.args ? `(${global.args.join(', ')})` : ''}${
-							global.body ? ` ${global.body.map(tk => (tk.global ? globalStr(tk) : tk.data)).join('')}` : ''
+							global.body
+								? ` ${global.body.map(tk => (tk.global ? globalStr(tk) : tk.data)).join('')}`
+								: ''
 						}`
 					}
 					return name
@@ -240,16 +254,6 @@ ${content}
 			})
 		).then(() => {
 			this.parseGLSL()
-			this.tokens = trimTokens(
-				this.tokens.filter((token, i, tokens) => {
-					if (token.export || token.type === 'eof' || !token.data) return false
-					const prev = i && tokens[i - 1]
-					if (prev && prev.export && token.type === 'whitespace') {
-						return false
-					}
-					return true
-				})
-			)
 
 			let depIdGen = {},
 				deps = {}

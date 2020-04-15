@@ -1,13 +1,4 @@
-/.citi
-/git-tool.sh
-/.gitlab
-/.gitattributes
-/.vscode
-/.editorConfig
-/.resp
-.vscode
-!.vscode/settings.json
-!.vscode/launch.json
+.resp
 .gitmessage
 package-lock.json
 yarn.lock

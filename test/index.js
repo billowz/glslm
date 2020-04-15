@@ -1,8 +1,8 @@
-const test = require('tape')
-const path = require('path')
-const fs = require('fs')
-const glslm = require('../')
-require('../register')()
+const test = require('tape'),
+	path = require('path'),
+	fs = require('fs'),
+	glslm = require('../src/index'),
+	write = require('write')
 const testReg = /^(.*)/,
 	snapshotFolder = './snoapshots',
 	fixtureFolder = './fixtures',
@@ -10,7 +10,16 @@ const testReg = /^(.*)/,
 	ESMExt = '.es.js',
 	TSMExt = '.ts'
 
+const g = glslm({
+	transformDepentPath(path, type) {
+		if (!/^\.[\\/]/.test(path)) return (path = `./${path}`)
+		return `${path.replace(/\.[^\.]+$/, '')}${type == 'esm' ? '.es' : ''}`
+	}
+})
 const shaders = {
+	'../../node_modules/glsl-noise/simplex/3d.glsl': {
+		name: 'glsl-noise'
+	},
 	'glslify.frag': {
 		name: 'Glslify'
 	},
@@ -45,8 +54,6 @@ const shaders = {
 		err: 'global have exported'
 	}
 }
-
-const g = glslm()
 
 if (process.env.SNAPSHOT) {
 	// generate snapshot files
@@ -84,14 +91,12 @@ if (process.env.SNAPSHOT) {
 					console.log(`\n================== ${desc.name} (ts module)============================\n`)
 					console.log(m.toTSM())
 					*/
-
-					const glsl = readSnapshotFile(m.file)
-					assert.equals(glsl, m.toString())
+					assert.equals(readSnapshotFile(m.file), m.toString())
 					assert.equals(readSnapshotFile(m.file, CJSExt), m.toCJS())
 					assert.equals(readSnapshotFile(m.file, ESMExt), m.toESM())
 					assert.equals(readSnapshotFile(m.file, TSMExt), m.toTSM())
 
-					//assert.equals(require(getSnapshotFile(m.file, CJSExt))(), glsl)
+					assert.equals(require(getSnapshotFile(m.file, CJSExt))(), m.toString({}, true, false))
 
 					assert.end()
 				})
@@ -107,6 +112,7 @@ if (process.env.SNAPSHOT) {
 					} else {
 						console.error(err)
 						assert.error(err, err.message)
+						throw err
 					}
 					assert.end()
 				})
@@ -120,7 +126,13 @@ function getFixtureFile(file) {
 	return path.resolve(__dirname, fixtureFolder, file)
 }
 function getSnapshotFile(file, ext) {
-	file = path.resolve(__dirname, snapshotFolder, path.relative(path.resolve(__dirname, fixtureFolder), file))
+	file = path.resolve(
+		__dirname,
+		snapshotFolder,
+		/node_modules[\\/]/.test(file)
+			? file.replace(/.*node_modules[\\/]/, '')
+			: path.relative(path.resolve(__dirname, fixtureFolder), file)
+	)
 	if (ext) file = file.replace(fileSuffixReg, ext)
 	return file
 }
@@ -132,7 +144,5 @@ function readSnapshotFile(file, ext) {
 function writeSnapshotFile(file, ext, content) {
 	const snapshotFile = getSnapshotFile(file, ext)
 	console.log(`writing ${snapshotFile} from ${file}`)
-	try {
-		fs.writeFileSync(snapshotFile, content, { encoding: 'utf-8' })
-	} catch (e) {}
+	write.sync(snapshotFile, content, { encoding: 'utf-8' })
 }

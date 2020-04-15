@@ -3,12 +3,12 @@ const GLSLModule = require('./GLSLModule'),
 	nodeResolve = require('resolve'),
 	findup = require('@choojs/findup'),
 	fs = require('fs'),
-	Emitter = require('events/'),
+	Emitter = require('events'),
 	path = require('path'),
 	log4js = require('log4js')
 
 module.exports = class GLSLLoader extends Emitter {
-	constructor({ cwd, readFile, cache, resolve, logLevel = 'warn' } = {}) {
+	constructor({ cwd, readFile, cache, resolve, transformDepentPath, logLevel = 'warn' } = {}) {
 		super()
 		cache = cache || {}
 		this.modules = cache.modules || {}
@@ -17,6 +17,7 @@ module.exports = class GLSLLoader extends Emitter {
 		this.cwd = cwd || process.cwd()
 		this.readFile = readWrap(readFile || defaultReadFile)
 		this.resolve = resolve || glslResolve
+		this.transformDepentPath = transformDepentPath
 		this.logger = log4js.getLogger()
 		this.logger.level = logLevel
 	}
@@ -54,18 +55,23 @@ module.exports = class GLSLLoader extends Emitter {
 			.then(source => {
 				this.emit('transformed', file, source)
 
-				const m = new GLSLModule(file, source, (file, imp) => {
-					return new Promise((resolve, reject) => {
-						this.resolve(imp.path, { basedir: path.dirname(path.resolve(file)) }, (err, resolved) => {
-							if (err)
-								return reject(
-									`${imp.token.file}:${imp.token.line} can not resolve glsl module: ${imp.path}`
-								)
-							this.load(resolved).then(m => {
-								resolve(m)
+				const m = new GLSLModule({
+					file,
+					source,
+					transformDepentPath: this.transformDepentPath,
+					resolve: (file, imp) => {
+						return new Promise((resolve, reject) => {
+							this.resolve(imp.path, { basedir: path.dirname(path.resolve(file)) }, (err, resolved) => {
+								if (err)
+									return reject(
+										`${imp.token.file}:${imp.token.line} can not resolve glsl module: ${imp.path}`
+									)
+								this.load(resolved).then(m => {
+									resolve(m)
+								})
 							})
 						})
-					})
+					}
 				})
 				this.logger.debug(`parsing ${file}`)
 				return m.parse()
